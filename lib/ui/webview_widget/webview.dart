@@ -8,6 +8,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart'
     as webview_flutter_android;
+// Import for iOS features.
+import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 
 ///Chatwoot webview widget
 /// {@category FlutterClientSdk}
@@ -62,6 +64,20 @@ class _WebviewState extends State<Webview> {
   @override
   void initState() {
     super.initState();
+
+    late final PlatformWebViewControllerCreationParams params;
+    if (WebViewPlatform.instance is WebKitWebViewPlatform) {
+      params = WebKitWebViewControllerCreationParams(
+        allowsInlineMediaPlayback: true,
+        mediaTypesRequiringUserAction: const <PlaybackMediaTypes>{},
+      );
+    } else {
+      params = const PlatformWebViewControllerCreationParams();
+    }
+
+    final WebViewController controller =
+        WebViewController.fromPlatformCreationParams(params);
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       String webviewUrl = widget.widgetUrl;
       final cwCookie = await StoreHelper.getCookie();
@@ -69,7 +85,7 @@ class _WebviewState extends State<Webview> {
         webviewUrl = "${webviewUrl}&cw_conversation=${cwCookie}";
       }
       setState(() {
-        _controller = WebViewController()
+        controller
           ..setJavaScriptMode(JavaScriptMode.unrestricted)
           ..setBackgroundColor(Colors.white)
           ..setNavigationDelegate(
@@ -86,8 +102,7 @@ class _WebviewState extends State<Webview> {
               },
               onWebResourceError: (WebResourceError error) {},
               onNavigationRequest: (NavigationRequest request) {
-                _goToUrl(request.url);
-                return NavigationDecision.prevent;
+                return NavigationDecision.navigate;
               },
             ),
           )
@@ -102,7 +117,7 @@ class _WebviewState extends State<Webview> {
               if (eventType == 'loaded') {
                 final authToken = parsedMessage["config"]["authToken"];
                 StoreHelper.storeCookie(authToken);
-                _controller?.runJavaScript(widget.injectedJavaScript);
+                controller?.runJavaScript(widget.injectedJavaScript);
               }
               if (type == 'close-widget') {
                 widget.closeWidget?.call();
@@ -112,11 +127,13 @@ class _WebviewState extends State<Webview> {
           ..loadRequest(Uri.parse(webviewUrl));
 
         if (Platform.isAndroid && widget.onAttachFile != null) {
-          final androidController = _controller!.platform
+          final androidController = controller!.platform
               as webview_flutter_android.AndroidWebViewController;
           androidController
               .setOnShowFileSelector((_) => widget.onAttachFile!.call());
         }
+
+        _controller = controller;
       });
     });
   }
