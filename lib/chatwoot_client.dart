@@ -7,6 +7,7 @@ import 'package:chatwoot_sdk/data/remote/requests/chatwoot_new_message_request.d
 import 'package:chatwoot_sdk/di/modules.dart';
 import 'package:chatwoot_sdk/chatwoot_parameters.dart';
 import 'package:chatwoot_sdk/repository_parameters.dart';
+import 'package:chatwoot_sdk/ui/webview_widget/utils.dart';
 import 'package:riverpod/riverpod.dart';
 
 import 'data/local/local_storage.dart';
@@ -172,5 +173,9 @@ class ChatwootClient {
 
     localStorage.dispose();
     container.dispose();
+  }
+
+  static clearCookies() async {
+    await StoreHelper.deleteCookie();
   }
 }

@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:chatwoot_sdk/chatwoot_sdk.dart';
 import 'package:chatwoot_sdk/ui/webview_widget/utils.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart'
     as webview_flutter_android;
@@ -117,7 +116,7 @@ class _WebviewState extends State<Webview> {
               if (eventType == 'loaded') {
                 final authToken = parsedMessage["config"]["authToken"];
                 StoreHelper.storeCookie(authToken);
-                controller?.runJavaScript(widget.injectedJavaScript);
+                controller.runJavaScript(widget.injectedJavaScript);
               }
               if (type == 'close-widget') {
                 widget.closeWidget?.call();
@@ -126,14 +125,9 @@ class _WebviewState extends State<Webview> {
           })
           ..loadRequest(Uri.parse(webviewUrl));
 
-        if (Platform.isAndroid && widget.onAttachFile != null) {
-          final androidController = controller!.platform
-              as webview_flutter_android.AndroidWebViewController;
-          androidController
-              .setOnShowFileSelector((_) => widget.onAttachFile!.call());
-        }
-
         _controller = controller;
+
+        addFileSelectionListener();
       });
     });
   }
@@ -145,7 +139,22 @@ class _WebviewState extends State<Webview> {
         : SizedBox();
   }
 
-  _goToUrl(String url) {
-    launchUrl(Uri.parse(url));
+  void addFileSelectionListener() async {
+    if (Platform.isAndroid) {
+      final androidController = _controller?.platform
+          as webview_flutter_android.AndroidWebViewController;
+      await androidController.setOnShowFileSelector(_androidFilePicker);
+    }
+  }
+
+  Future<List<String>> _androidFilePicker(
+      final webview_flutter_android.FileSelectorParams params) async {
+    final result = await FilePicker.platform.pickFiles();
+
+    if (result != null && result.files.single.path != null) {
+      final file = File(result.files.single.path!);
+      return [file.uri.toString()];
+    }
+    return [];
   }
 }

@@ -67,4 +67,8 @@ class StoreHelper {
   static storeCookie(value) async {
     await secureStorage.write(key: cookieKey, value: value);
   }
+
+  static deleteCookie() async {
+    await secureStorage.delete(key: cookieKey);
+  }
 }
