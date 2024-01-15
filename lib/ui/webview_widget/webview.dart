@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:chatwoot_sdk/chatwoot_sdk.dart';
 import 'package:chatwoot_sdk/ui/webview_widget/utils.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart'
     as webview_flutter_android;
@@ -101,6 +102,13 @@ class _WebviewState extends State<Webview> {
               },
               onWebResourceError: (WebResourceError error) {},
               onNavigationRequest: (NavigationRequest request) {
+                final urlString = request.url.toUpperCase();
+                final uriUL = Uri.parse(request.url);
+                if (urlString.contains('ACTIVE_STORAGE')) {
+                  launchUrl(uriUL);
+                  return NavigationDecision.prevent;
+                }
+
                 return NavigationDecision.navigate;
               },
             ),
